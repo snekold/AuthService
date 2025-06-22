@@ -1,5 +1,8 @@
 package org.example.authservice.service;
 
+import io.jsonwebtoken.io.IOException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.example.authservice.dto.AuthentificationResponseToken;
 import org.example.authservice.dto.UserAuthDTO;
@@ -35,17 +38,10 @@ public class UserServiceImpl implements UserService {
         String jwtToken = jwtService.generateToken(userSaved);
         String refreshToken = jwtService.generateRefreshToken(userSaved);
 
-        Token tokenJwt = Token.builder()
-                .user(userSaved)
-                .token(jwtToken)
-                .expired(false)
-                .revoked(false)
-                .build();
-
-        tokenRepository.save(tokenJwt);
+        saveUserToken(userSaved, jwtToken);
 
         return AuthentificationResponseToken.builder()
-                .accessToken(tokenJwt.getToken())
+                .accessToken(jwtToken)
                 .refreshToken(refreshToken)
                 .build();
 
@@ -53,10 +49,10 @@ public class UserServiceImpl implements UserService {
 
     public AuthentificationResponseToken authUser(UserAuthDTO userAuthDTO) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                userAuthDTO.getEmail(),
+                userAuthDTO.getUsername(),
                 userAuthDTO.getPassword()));
 
-        User user = userRepository.findByEmail(userAuthDTO.getEmail()).orElseThrow();
+        User user = userRepository.findByUserName(userAuthDTO.getUsername()).orElseThrow();
         String jwtToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         revokeAllUserToken(user);
@@ -78,13 +74,12 @@ public class UserServiceImpl implements UserService {
     }
 
 
-
-    public void revokeAllUserToken (User user) {
+    public void revokeAllUserToken(User user) {
         var validsTokens = tokenRepository.findAllValidTokensByUserId(user.getId());
-        if(validsTokens.isEmpty()){
+        if (validsTokens.isEmpty()) {
             return;
         }
-        validsTokens.forEach(token->{
+        validsTokens.forEach(token -> {
             token.setRevoked(true);
             token.setExpired(true);
         });
@@ -96,7 +91,52 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(long id) {
-        return userRepository.findById(id).orElseThrow(()->
+        return userRepository.findById(id).orElseThrow(() ->
                 new RuntimeException("User with id " + id + " not found"));
     }
+
+
+    public AuthentificationResponseToken refreshUsertoken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        final String authorizationHeader = request.getHeader("Authorization");
+        final String refreshToken;
+        final String username;
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new IllegalStateException("Refresh token is missing");
+        }
+
+        refreshToken = authorizationHeader.substring(7);
+        username = jwtService.extractUsername(refreshToken);
+
+        if (username != null) {
+            User user = userRepository.findByUserName(username)
+                    .orElseThrow(() -> new IllegalStateException("User not found"));
+
+            if (jwtService.isValidToken(refreshToken, user)) {
+                String token = jwtService.generateToken(user);
+                revokeAllUserToken(user);
+                saveUserToken(user, token);
+
+                return AuthentificationResponseToken.builder()
+                        .accessToken(token)
+                        .refreshToken(refreshToken)
+                        .build();
+            }
+
+        }
+        throw  new IllegalStateException("Invalid refresh token");
+    }
+
+    private void saveUserToken(User user, String token) {
+        Token tokenJwt = Token.builder()
+                .user(user)
+                .token(token)
+                .expired(false)
+                .revoked(false)
+                .build();
+
+        tokenRepository.save(tokenJwt);
+    }
+
+
 }

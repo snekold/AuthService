@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 @Configuration
@@ -20,6 +21,7 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
     private final LogoutHandler logoutHandler;
+    private final JwtAuthFilter jwtAuthFilter;
 
     private static final String[] URLS = {
             "/api/v1/auth/**",
@@ -40,7 +42,7 @@ public class SecurityConfig {
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore()
+                .addFilterBefore( jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout->
                         logout.logoutUrl("/api/v1/auth/logout")
                                 .addLogoutHandler(logoutHandler)
