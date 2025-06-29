@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
     public AuthentificationResponseToken registrationUser(UserRegDTO userRegDTO) {
         User user = User.builder()
                 .password(passwordEncoder.encode(userRegDTO.getPassword()))
-                .role(Roles.USER)
+                .role(userRegDTO.getRole())
                 .username(userRegDTO.getUsername())
                 .build();
 
@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService {
                 userAuthDTO.getUsername(),
                 userAuthDTO.getPassword()));
 
-        User user = userRepository.findByUserName(userAuthDTO.getUsername()).orElseThrow();
+        User user = userRepository.findByUsername(userAuthDTO.getUsername()).orElseThrow();
         String jwtToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         revokeAllUserToken(user);
@@ -88,6 +88,10 @@ public class UserServiceImpl implements UserService {
 
     }
 
+    @Override
+    public User getUserByName(String name) {
+        return userRepository.findByUsername(name).orElse(null);
+    }
 
     @Override
     public User getUserById(long id) {
@@ -109,7 +113,7 @@ public class UserServiceImpl implements UserService {
         username = jwtService.extractUsername(refreshToken);
 
         if (username != null) {
-            User user = userRepository.findByUserName(username)
+            User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new IllegalStateException("User not found"));
 
             if (jwtService.isValidToken(refreshToken, user)) {

@@ -39,9 +39,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer")) {
+        if (request.getServletPath().contains("/api/v1/reg")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new IllegalStateException("token not found OR token is Valid");
         }
+
+
 
         jwtToken = authorizationHeader.substring(7);
         username = jwtService.extractUsername(jwtToken);

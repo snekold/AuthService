@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,8 +20,8 @@ import java.util.function.Function;
 @Service
 public class JwtService {
     private String secretKeyStr = "JlkjubhlIBLjgljyvGJvk43223UGVUKVKJ";
-    private long jwtExpression = 60000 * 2;
-    private long refreshExpression = 60000 * 5;
+    private long jwtExpression = 60000 * 200;
+    private long refreshExpression = 60000 * 500;
 
 
 
@@ -38,16 +39,13 @@ public class JwtService {
 
     //# 1 вспомогательный метод 2
     private Claims extractAllClaims(String token) {
-        SecretKey secretKey = Keys.hmacShaKeyFor(secretKeyStr.getBytes());
-        Claims claims = Jwts
-                .parser()
+        SecretKey secretKey = Keys.hmacShaKeyFor(secretKeyStr.getBytes(StandardCharsets.UTF_8));
+        return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-        return claims;
     }
-
 
     //#2 генерация токена
     public String generateToken(Map<String,Object> extraClaims,UserDetails userDetails){
@@ -63,8 +61,8 @@ public class JwtService {
     }
 
     //#2 вспомогательный метод
-    private String buildToken(Map<String,Object> extraClaims,UserDetails userDetails, Long expiration ){
-        SecretKey secretKey = Keys.hmacShaKeyFor(secretKeyStr.getBytes());
+    private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, Long expiration) {
+        SecretKey secretKey = Keys.hmacShaKeyFor(secretKeyStr.getBytes(StandardCharsets.UTF_8));
 
         return Jwts.builder()
                 .claims(extraClaims)

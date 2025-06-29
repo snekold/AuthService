@@ -7,7 +7,7 @@ import java.util.List;
 
 
 public enum Roles {
-    USER, ADMIN;;
+    USER, ADMIN;
 
     public List<SimpleGrantedAuthority> grantedAuthorityList(){
         List<SimpleGrantedAuthority> grantedAuthorityList = new ArrayList<>();
