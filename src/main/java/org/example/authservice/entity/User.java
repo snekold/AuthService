@@ -1,5 +1,6 @@
 package org.example.authservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,6 +32,7 @@ public class User implements UserDetails{
     private Roles role;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<Token> tokens = new ArrayList<>();
 
 

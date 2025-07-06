@@ -1,5 +1,7 @@
 package org.example.authservice.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.example.authservice.dto.AuthentificationResponseToken;
 import org.example.authservice.dto.UserAuthDTO;
@@ -30,6 +32,13 @@ public class AuthController {
                 userService.authUser(userAuthDTO);
 
         return ResponseEntity.ok(authentificationResponseToken);
+    }
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthentificationResponseToken> refreshToken (
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+      return ResponseEntity.ok(userService.refreshToken(response,request));
     }
 
 }

@@ -99,37 +99,37 @@ public class UserServiceImpl implements UserService {
                 new RuntimeException("User with id " + id + " not found"));
     }
 
-
-    public AuthentificationResponseToken refreshUsertoken(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        final String authorizationHeader = request.getHeader("Authorization");
-        final String refreshToken;
-        final String username;
-
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new IllegalStateException("Refresh token is missing");
-        }
-
-        refreshToken = authorizationHeader.substring(7);
-        username = jwtService.extractUsername(refreshToken);
-
-        if (username != null) {
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new IllegalStateException("User not found"));
-
-            if (jwtService.isValidToken(refreshToken, user)) {
-                String token = jwtService.generateToken(user);
-                revokeAllUserToken(user);
-                saveUserToken(user, token);
-
-                return AuthentificationResponseToken.builder()
-                        .accessToken(token)
-                        .refreshToken(refreshToken)
-                        .build();
-            }
-
-        }
-        throw  new IllegalStateException("Invalid refresh token");
-    }
+//
+//    public AuthentificationResponseToken refreshUsertoken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+//        final String authorizationHeader = request.getHeader("Authorization");
+//        final String refreshToken;
+//        final String username;
+//
+//        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+//            throw new IllegalStateException("Refresh token is missing");
+//        }
+//
+//        refreshToken = authorizationHeader.substring(7);
+//        username = jwtService.extractUsername(refreshToken);
+//
+//        if (username != null) {
+//            User user = userRepository.findByUsername(username)
+//                    .orElseThrow(() -> new IllegalStateException("User not found"));
+//
+//            if (jwtService.isValidToken(refreshToken, user)) {
+//                String token = jwtService.generateToken(user);
+//                revokeAllUserToken(user);
+//                saveUserToken(user, token);
+//
+//                return AuthentificationResponseToken.builder()
+//                        .accessToken(token)
+//                        .refreshToken(refreshToken)
+//                        .build();
+//            }
+//
+//        }
+//        throw  new IllegalStateException("Invalid refresh token");
+//    }
 
     private void saveUserToken(User user, String token) {
         Token tokenJwt = Token.builder()
@@ -142,5 +142,38 @@ public class UserServiceImpl implements UserService {
         tokenRepository.save(tokenJwt);
     }
 
+    @Override
+    public AuthentificationResponseToken refreshToken(HttpServletResponse httpResponse,
+                                                      HttpServletRequest httpRequest) {
 
+        String authHeader = httpRequest.getHeader("Authorization");
+        String refreshToken;
+        String username;
+
+
+        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new IllegalStateException("Refresh token is missing");
+        }
+
+        refreshToken = authHeader.substring(7);
+        username = jwtService.extractUsername(refreshToken);
+
+        if (username != null) {
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalStateException("User not found"));
+
+            if (jwtService.isValidToken(refreshToken, user)) {
+                String token = jwtService.generateToken(user);
+                revokeAllUserToken(user);
+                saveUserToken(user, token);
+
+                return AuthentificationResponseToken.builder()
+                        .refreshToken(token)
+                        .accessToken(token)
+                        .build();
+            }
+
+        }
+        throw new IllegalStateException("Refresh token is missing");
+    }
 }
